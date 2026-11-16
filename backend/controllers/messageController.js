@@ -14,6 +14,7 @@ const getConversations = async (req, res) => {
       .populate("client", "name avatar")
       .populate("freelancer", "name avatar")
       .populate("job", "title")
+      .populate("gig", "title")
       .sort({ lastMessageAt: -1 });
 
     // Calculate unread messages for each conversation

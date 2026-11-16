@@ -1,4 +1,6 @@
 const Gig = require("../models/Gig");
+const Order = require("../models/Order");
+const Conversation = require("../models/Conversation");
 
 // GET /api/gigs?search=&category=&trending=true
 const getGigs = async (req, res) => {
@@ -88,4 +90,56 @@ const deleteGig = async (req, res) => {
   }
 };
 
-module.exports = { getGigs, getGigById, createGig, updateGig, deleteGig };
+
+const purchaseGig = async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id);
+
+    if (!gig) {
+      return res.status(404).json({ message: "Gig not found" });
+    }
+
+    // Prevent freelancers from purchasing their own gigs
+    if (gig.freelancer.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot purchase your own gig",
+      });
+    }
+
+    // Simulate a successful purchase
+    const order = await Order.create({
+      gig: gig._id,
+      client: req.user._id,
+      freelancer: gig.freelancer,
+      amount: gig.startingPrice,
+      paymentStatus: "completed",
+      orderStatus: "active",
+    });
+
+    // Automatically create a conversation
+    const conversation = await Conversation.create({
+      gig: gig._id,
+      order: order._id,
+      client: req.user._id,
+      freelancer: gig.freelancer,
+    });
+
+    res.status(201).json({
+      message: "Gig purchased successfully!",
+      order,
+      conversation,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+module.exports = {
+  getGigs,
+  getGigById,
+  createGig,
+  updateGig,
+  deleteGig,
+  purchaseGig,
+};

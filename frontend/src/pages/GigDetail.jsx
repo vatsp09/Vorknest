@@ -48,33 +48,45 @@ const GigDetail = () => {
     return () => clearTimeout(timer);
   }, [flash]);
 
-  const handleHire = () => {
-    // 1. Not logged in -> go to login, and come back here afterwards
+  const handleHire = async () => {
     if (!user) {
       navigate("/login", { state: { from: location.pathname } });
       return;
     }
 
-    // 2. Logged in but in freelancer mode -> stay here, show message
     if (user.mode !== "client") {
       setFlash({
         type: "error",
-        text: "Sorry, you need to be in Client mode to hire. Switch to Client mode first.",
+        text: "You need to be in Client mode to purchase a gig.",
       });
       return;
     }
 
-    // 3. Can't hire yourself (for dual-role users)
     if (gig?.freelancer?._id === user._id) {
-      setFlash({ type: "error", text: "You can't hire yourself on your own gig." });
+      setFlash({
+        type: "error",
+        text: "You can't purchase your own gig.",
+      });
       return;
     }
 
-    // 4. Client -> order generated
-    setFlash({
-      type: "success",
-      text: "Order generated successfully! The freelancer will be notified.",
-    });
+    try {
+      const { data } = await api.post(`/gigs/${id}/purchase`);
+
+      setFlash({
+        type: "success",
+        text: "Purchase successful! You can now message the freelancer.",
+      });
+
+      // Open the newly created conversation
+      navigate(`/messages/${data.conversation._id}`);
+    } catch (err) {
+      setFlash({
+        type: "error",
+        text:
+          err.response?.data?.message || "Purchase failed. Please try again.",
+      });
+    }
   };
 
   const handleDelete = async () => {
@@ -83,19 +95,29 @@ const GigDetail = () => {
       await api.delete(`/gigs/${id}`);
       navigate("/profile");
     } catch (err) {
-      setFlash({ type: "error", text: err.response?.data?.message || "Could not delete gig." });
+      setFlash({
+        type: "error",
+        text: err.response?.data?.message || "Could not delete gig.",
+      });
     }
   };
 
   if (loading) {
-    return <div className="max-w-5xl mx-auto px-6 py-16 text-center text-gray-400">Loading gig...</div>;
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-16 text-center text-gray-400">
+        Loading gig...
+      </div>
+    );
   }
 
   if (error || !gig) {
     return (
       <div className="max-w-5xl mx-auto px-6 py-16 text-center">
         <p className="text-gray-500">{error || "Gig not found."}</p>
-        <Link to="/find-work" className="text-brand-600 font-semibold mt-3 inline-block">
+        <Link
+          to="/find-work"
+          className="text-brand-600 font-semibold mt-3 inline-block"
+        >
           Back to Find Work
         </Link>
       </div>
@@ -116,7 +138,11 @@ const GigDetail = () => {
               : "bg-red-50 border-red-200 text-red-800"
           }`}
         >
-          {flash.type === "success" ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+          {flash.type === "success" ? (
+            <CheckCircle2 size={20} />
+          ) : (
+            <AlertCircle size={20} />
+          )}
           <span className="text-sm font-medium">{flash.text}</span>
           <button onClick={() => setFlash(null)}>
             <X size={16} />
@@ -124,14 +150,21 @@ const GigDetail = () => {
         </div>
       )}
 
-      <Link to="/find-work" className="flex items-center gap-2 text-gray-500 hover:text-brand-600 text-sm mb-6">
+      <Link
+        to="/find-work"
+        className="flex items-center gap-2 text-gray-500 hover:text-brand-600 text-sm mb-6"
+      >
         <ArrowLeft size={16} /> Back to all gigs
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Left: gig content */}
         <div className="lg:col-span-2">
-          <img src={gig.image} alt={gig.title} className="w-full h-80 object-cover rounded-2xl" />
+          <img
+            src={gig.image}
+            alt={gig.title}
+            className="w-full h-80 object-cover rounded-2xl"
+          />
 
           <div className="flex items-center gap-2 mt-5">
             <span className="text-xs font-semibold bg-brand-100 text-brand-700 px-3 py-1 rounded-full">
@@ -140,17 +173,24 @@ const GigDetail = () => {
             <span className="flex items-center gap-1 text-sm font-semibold text-gray-700">
               <Star size={15} className="fill-yellow-400 text-yellow-400" />
               {gig.rating?.toFixed(1) || "New"}{" "}
-              <span className="text-gray-400 font-normal">({gig.reviewCount || 0} reviews)</span>
+              <span className="text-gray-400 font-normal">
+                ({gig.reviewCount || 0} reviews)
+              </span>
             </span>
           </div>
 
-          <h1 className="text-3xl font-extrabold text-gray-900 mt-3">{gig.title}</h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 mt-3">
+            {gig.title}
+          </h1>
 
-          <p className="text-gray-600 leading-relaxed mt-5">{gig.description}</p>
+          <p className="text-gray-600 leading-relaxed mt-5">
+            {gig.description}
+          </p>
 
           <div className="mt-8">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-3">
-              <Tag size={18} className="text-brand-600" /> Tech Stack &amp; Skills
+              <Tag size={18} className="text-brand-600" /> Tech Stack &amp;
+              Skills
             </h2>
             <div className="flex flex-wrap gap-2">
               {(gig.tags || []).length > 0 ? (
@@ -163,24 +203,32 @@ const GigDetail = () => {
                   </span>
                 ))
               ) : (
-                <span className="text-gray-400 text-sm">No specific tags listed.</span>
+                <span className="text-gray-400 text-sm">
+                  No specific tags listed.
+                </span>
               )}
             </div>
           </div>
 
           <div className="mt-10 border-t border-gray-100 pt-8">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
-              <Briefcase size={18} className="text-brand-600" /> About the Freelancer
+              <Briefcase size={18} className="text-brand-600" /> About the
+              Freelancer
             </h2>
             <div className="flex items-start gap-4">
               <img
-                src={freelancer.avatar || `https://api.dicebear.com/7.x/notionists/svg?seed=${freelancer.name}`}
+                src={
+                  freelancer.avatar ||
+                  `https://api.dicebear.com/7.x/notionists/svg?seed=${freelancer.name}`
+                }
                 alt={freelancer.name}
                 className="w-16 h-16 rounded-xl object-cover bg-brand-50"
               />
               <div>
                 <p className="font-bold text-gray-900">{freelancer.name}</p>
-                <p className="text-brand-600 text-sm font-medium">{freelancer.title || "Freelancer"}</p>
+                <p className="text-brand-600 text-sm font-medium">
+                  {freelancer.title || "Freelancer"}
+                </p>
                 <p className="text-gray-600 text-sm mt-2 max-w-xl">
                   {freelancer.bio || "This freelancer hasn't added a bio yet."}
                 </p>
@@ -202,7 +250,9 @@ const GigDetail = () => {
         {/* Right: sticky price + hire card */}
         <aside className="lg:sticky lg:top-6 h-fit">
           <div className="bg-white border border-gray-100 rounded-2xl p-6">
-            <p className="text-xs text-gray-400 tracking-wide font-semibold">STARTING AT</p>
+            <p className="text-xs text-gray-400 tracking-wide font-semibold">
+              STARTING AT
+            </p>
             <p className="text-3xl font-extrabold text-gray-900 mt-1">
               ₹{gig.startingPrice?.toLocaleString("en-IN")}
             </p>
@@ -234,7 +284,9 @@ const GigDetail = () => {
           </div>
 
           <div className="bg-white border border-gray-100 rounded-2xl p-6 mt-5">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Freelancer Credibility</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">
+              Freelancer Credibility
+            </p>
             <div className="flex items-center gap-2">
               <Star size={20} className="fill-yellow-400 text-yellow-400" />
               <span className="text-2xl font-bold text-gray-900">

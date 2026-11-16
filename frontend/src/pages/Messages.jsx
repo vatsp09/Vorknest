@@ -142,7 +142,9 @@ const Messages = () => {
                     </div>
 
                     <p className="text-xs text-brand-600 font-medium mt-1">
-                      {conversation.job?.title || "Project"}
+                      {conversation.gig?.title ||
+                        conversation.job?.title ||
+                        "Project"}
                     </p>
 
                     <p
