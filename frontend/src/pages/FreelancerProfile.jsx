@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Star, Pencil, Plus, X, Check } from "lucide-react";
+import { Star, Pencil, Plus, X, Check, Send, Undo2 } from "lucide-react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import GigCard from "../components/GigCard";
+import ProposalStatusBadge from "../components/ProposalStatusBadge";
+
+const inr = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 const FreelancerProfile = () => {
   const { user, setUser } = useAuth();
   const [gigs, setGigs] = useState([]);
+  const [proposals, setProposals] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    bio: "",
-    hourlyRate: "",
-    skills: "",
-  });
+  const [form, setForm] = useState({ title: "", bio: "", hourlyRate: "", skills: "" });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,12 +28,16 @@ const FreelancerProfile = () => {
   }, [user]);
 
   useEffect(() => {
-    const loadMyGigs = async () => {
+    const loadData = async () => {
       if (!user) return;
-      const { data } = await api.get("/gigs");
-      setGigs(data.filter((g) => g.freelancer?._id === user._id));
+      const [gigsRes, proposalsRes] = await Promise.all([
+        api.get("/gigs"),
+        api.get("/proposals/mine"),
+      ]);
+      setGigs(gigsRes.data.filter((g) => g.freelancer?._id === user._id));
+      setProposals(proposalsRes.data);
     };
-    loadMyGigs();
+    loadData();
   }, [user]);
 
   const handleSave = async () => {
@@ -56,6 +59,18 @@ const FreelancerProfile = () => {
     }
   };
 
+    const handleDeleteGig = async (gigId) => {
+    if (!window.confirm("Delete this gig permanently?")) return;
+    await api.delete(`/gigs/${gigId}`);
+    setGigs((prev) => prev.filter((g) => g._id !== gigId));
+  };
+
+  const handleWithdraw = async (proposalId) => {
+    if (!window.confirm("Withdraw this proposal?")) return;
+    await api.delete(`/proposals/${proposalId}`);
+    setProposals((prev) => prev.filter((p) => p._id !== proposalId));
+  };
+
   if (!user) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-16 text-center">
@@ -66,6 +81,8 @@ const FreelancerProfile = () => {
       </div>
     );
   }
+
+  const pendingCount = proposals.filter((p) => p.status === "pending").length;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10">
@@ -130,7 +147,7 @@ const FreelancerProfile = () => {
             <span className="text-gray-300">|</span>
             {!editing ? (
               <span className="font-semibold text-gray-800">
-                ₹{user.hourlyRate?.toLocaleString("en-IN") || 0}
+                {inr(user.hourlyRate)}
                 <span className="text-gray-400 font-normal">/hr</span>
               </span>
             ) : (
@@ -184,6 +201,66 @@ const FreelancerProfile = () => {
         </div>
       </div>
 
+      {/* My proposals */}
+      <div className="mt-10">
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <Send size={22} className="text-brand-600" /> My Proposals
+            {pendingCount > 0 && (
+              <span className="text-xs font-semibold bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">
+                {pendingCount} awaiting
+              </span>
+            )}
+          </h2>
+          <Link to="/find-work?tab=jobs" className="text-brand-600 font-semibold text-sm">
+            Browse jobs →
+          </Link>
+        </div>
+
+        <div className="space-y-3 mt-6">
+          {proposals.map((p) => (
+            <div
+              key={p._id}
+              className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                {p.job ? (
+                  <Link
+                    to={`/jobs/${p.job._id}`}
+                    className="font-semibold text-gray-800 hover:text-brand-600"
+                  >
+                    {p.job.title}
+                  </Link>
+                ) : (
+                  <p className="font-semibold text-gray-400">Job no longer available</p>
+                )}
+                <p className="text-sm text-gray-500 mt-1">
+                  {p.job?.client?.name && <>Client: {p.job.client.name} • </>}
+                  Your bid: <span className="font-medium text-gray-700">{inr(p.proposedRate)}</span> •
+                  Sent {new Date(p.createdAt).toLocaleDateString("en-IN")}
+                </p>
+              </div>
+                 <div className="flex items-center gap-3">
+                <ProposalStatusBadge status={p.status} />
+                {p.status === "pending" && (
+                  <button
+                    onClick={() => handleWithdraw(p._id)}
+                    className="flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-full"
+                  >
+                    <Undo2 size={13} /> Withdraw
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {proposals.length === 0 && (
+            <p className="text-gray-400">
+              You haven't sent any proposals yet. Find a job and send your first one.
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* My gigs */}
       <div className="mt-10">
         <div className="flex items-center justify-between">
@@ -198,7 +275,7 @@ const FreelancerProfile = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {gigs.map((gig) => (
-            <GigCard key={gig._id} gig={gig} />
+             <GigCard key={gig._id} gig={gig} onDelete={handleDeleteGig} />
           ))}
           {gigs.length === 0 && (
             <p className="text-gray-400 col-span-full">

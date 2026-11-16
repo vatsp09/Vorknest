@@ -54,14 +54,16 @@ const PostJob = () => {
   };
 
   const buildPayload = () => ({
-    title,
-    description,
-    skillsRequired: skills,
-    budgetType: projectType,
-    budgetMin: Number(maxBudget) || 0,
-    budgetMax: Number(maxBudget) || 0,
-    hoursPerWeek: projectType === "hourly" ? timeline : "",
-  });
+  title,
+  description,
+  skillsRequired: skills,
+  budgetType: projectType,
+  budgetMin: Number(maxBudget) || 0,
+  budgetMax: Number(maxBudget) || 0,
+  hoursPerWeek: projectType === "hourly" ? timeline : "",
+  experienceLevel,
+  timeline,
+});
 
   const handlePost = async () => {
     if (!user) return setError("Please log in to post a job.");

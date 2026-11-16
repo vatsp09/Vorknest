@@ -5,7 +5,7 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
-// @route POST /api/auth/register
+//  POST /api/auth/register
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, mode } = req.body;
@@ -33,7 +33,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-// @route POST /api/auth/login
+// POST /api/auth/login
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -56,12 +56,12 @@ const loginUser = async (req, res) => {
   }
 };
 
-// @route GET /api/auth/me
+//  GET /api/auth/me
 const getMe = async (req, res) => {
   res.json(req.user);
 };
 
-// @route PUT /api/auth/mode  (toggle Client Mode / Freelancer Mode)
+// PUT /api/auth/mode  (toggle Client Mode / Freelancer Mode)
 const switchMode = async (req, res) => {
   try {
     req.user.mode = req.user.mode === "client" ? "freelancer" : "client";
@@ -72,7 +72,7 @@ const switchMode = async (req, res) => {
   }
 };
 
-// @route PUT /api/auth/profile  (freelancer edits their own profile)
+// PUT /api/auth/profile  (freelancer edits their own profile)
 const updateProfile = async (req, res) => {
   try {
     const { title, bio, skills, hourlyRate, avatar } = req.body;

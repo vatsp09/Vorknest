@@ -1,7 +1,7 @@
 const Job = require("../models/Job");
 const Proposal = require("../models/Proposal");
 
-// @route GET /api/jobs?search=&status=open
+//  GET /api/jobs?search=&status=open
 const getJobs = async (req, res) => {
   try {
     const { search, status } = req.query;
@@ -17,18 +17,20 @@ const getJobs = async (req, res) => {
   }
 };
 
-// @route GET /api/jobs/:id
+//  GET /api/jobs/:id
 const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate("client", "name avatar bio");
+    const job = await Job.findById(req.params.id).populate("client", "name avatar bio title createdAt");
     if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
+
+    const proposalCount = await Proposal.countDocuments({ job: job._id });
+    res.json({ ...job.toObject(), proposalCount });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// @route POST /api/jobs  (client only, protected)
+//  POST /api/jobs  (client only, protected)
 const createJob = async (req, res) => {
   try {
     const { title, description, skillsRequired, budgetType, budgetMin, budgetMax, hoursPerWeek } = req.body;
@@ -50,7 +52,7 @@ const createJob = async (req, res) => {
   }
 };
 
-// @route PUT /api/jobs/:id
+//  PUT /api/jobs/:id
 const updateJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -67,7 +69,7 @@ const updateJob = async (req, res) => {
   }
 };
 
-// @route DELETE /api/jobs/:id
+//  DELETE /api/jobs/:id
 const deleteJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -76,6 +78,7 @@ const deleteJob = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to delete this job" });
     }
 
+     await Proposal.deleteMany({ job: job._id });
     await job.deleteOne();
     res.json({ message: "Job removed" });
   } catch (err) {
@@ -83,12 +86,22 @@ const deleteJob = async (req, res) => {
   }
 };
 
-// @route POST /api/jobs/:id/proposals  (freelancer applies to a job)
+// POST /api/jobs/:id/proposals  (freelancer applies to a job)
 const submitProposal = async (req, res) => {
   try {
     const { coverLetter, proposedRate } = req.body;
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: "Job not found" });
+
+    if (job.status !== "open") {
+      return res.status(400).json({ message: "This job is no longer accepting proposals" });
+    }
+    if (job.client.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "You can't send a proposal to your own job" });
+    }
+    if (!coverLetter || !proposedRate) {
+      return res.status(400).json({ message: "Cover letter and proposed rate are required" });
+    }
 
     const proposal = await Proposal.create({
       job: job._id,
@@ -100,13 +113,13 @@ const submitProposal = async (req, res) => {
     res.status(201).json(proposal);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ message: "You already applied to this job" });
+      return res.status(400).json({ message: "You already sent a proposal to this job" });
     }
     res.status(500).json({ message: err.message });
   }
 };
 
-// @route GET /api/jobs/:id/proposals  (client views proposals on their job)
+// GET /api/jobs/:id/proposals  (client views proposals on their job)
 const getProposalsForJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);

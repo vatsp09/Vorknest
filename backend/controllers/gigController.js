@@ -1,6 +1,6 @@
 const Gig = require("../models/Gig");
 
-// @route GET /api/gigs?search=&category=&trending=true
+// GET /api/gigs?search=&category=&trending=true
 const getGigs = async (req, res) => {
   try {
     const { search, category, trending } = req.query;
@@ -20,10 +20,13 @@ const getGigs = async (req, res) => {
   }
 };
 
-// @route GET /api/gigs/:id
+//  GET /api/gigs/:id
 const getGigById = async (req, res) => {
   try {
-    const gig = await Gig.findById(req.params.id).populate("freelancer", "name avatar rating bio");
+    const gig = await Gig.findById(req.params.id).populate(
+      "freelancer",
+      "name avatar rating reviewCount bio title skills email"
+    );
     if (!gig) return res.status(404).json({ message: "Gig not found" });
     res.json(gig);
   } catch (err) {
@@ -31,7 +34,7 @@ const getGigById = async (req, res) => {
   }
 };
 
-// @route POST /api/gigs  (freelancer only, protected)
+// POST /api/gigs  (freelancer only, protected)
 const createGig = async (req, res) => {
   try {
     const { title, description, category, tags, image, startingPrice } = req.body;
@@ -52,7 +55,7 @@ const createGig = async (req, res) => {
   }
 };
 
-// @route PUT /api/gigs/:id
+//  PUT /api/gigs/:id
 const updateGig = async (req, res) => {
   try {
     const gig = await Gig.findById(req.params.id);
@@ -69,7 +72,7 @@ const updateGig = async (req, res) => {
   }
 };
 
-// @route DELETE /api/gigs/:id
+// DELETE /api/gigs/:id
 const deleteGig = async (req, res) => {
   try {
     const gig = await Gig.findById(req.params.id);

@@ -10,6 +10,7 @@ const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
+app.use("/api/proposals", require("./routes/proposalRoutes"));
 
 app.get("/", (req, res) => {
   res.send("ProLink API is running...");

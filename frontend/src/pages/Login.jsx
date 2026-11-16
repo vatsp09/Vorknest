@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from || "/";
+
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
@@ -12,7 +15,7 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(form);
-      navigate("/");
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
@@ -20,7 +23,12 @@ const Login = () => {
 
   return (
     <div className="max-w-md mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Log In</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Log In</h1>
+      {location.state?.from && (
+        <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2 mb-4">
+          Please log in first to continue.
+        </p>
+      )}
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -45,7 +53,7 @@ const Login = () => {
       </form>
       <p className="text-sm text-gray-500 mt-4">
         No account?{" "}
-        <Link to="/register" className="text-brand-600 font-medium">
+        <Link to="/register" state={location.state} className="text-brand-600 font-medium">
           Sign up
         </Link>
       </p>

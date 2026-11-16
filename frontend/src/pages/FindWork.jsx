@@ -2,26 +2,27 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../api/axios";
 import GigCard from "../components/GigCard";
-import LatestJobs from "../components/LatestJobs";
+import JobCard from "../components/JobCard";
 
 const FindWork = () => {
   const [searchParams] = useSearchParams();
   const search = searchParams.get("search") || "";
   const [tab, setTab] = useState(searchParams.get("tab") === "jobs" ? "jobs" : "gigs");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [gigs, setGigs] = useState([]);
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
     const load = async () => {
-      const [gigsRes, jobsRes] = await Promise.all([
-        api.get(`/gigs${search ? `?search=${search}` : ""}`),
-        api.get(`/jobs${search ? `?search=${search}` : ""}`),
-      ]);
+      const q = search ? `?search=${encodeURIComponent(search)}` : "";
+      const [gigsRes, jobsRes] = await Promise.all([api.get(`/gigs${q}`), api.get(`/jobs${q}`)]);
       setGigs(gigsRes.data);
       setJobs(jobsRes.data);
     };
     load();
   }, [search]);
+
+  const visibleJobs = jobs.filter((j) => typeFilter === "all" || j.budgetType === typeFilter);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
@@ -44,7 +45,7 @@ const FindWork = () => {
             tab === "jobs" ? "text-brand-600 border-b-2 border-brand-600" : "text-gray-400"
           }`}
         >
-          Job Posts
+          Job Posts ({jobs.length})
         </button>
       </div>
 
@@ -56,8 +57,33 @@ const FindWork = () => {
           {gigs.length === 0 && <p className="text-gray-400">No gigs found.</p>}
         </div>
       ) : (
-        <div className="mt-8 max-w-2xl">
-          <LatestJobs jobs={jobs} />
+        <div className="mt-6">
+          <div className="flex gap-2 mb-5">
+            {[
+              { v: "all", l: "All Jobs" },
+              { v: "fixed", l: "Fixed Price" },
+              { v: "hourly", l: "Hourly" },
+            ].map((f) => (
+              <button
+                key={f.v}
+                onClick={() => setTypeFilter(f.v)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium border ${
+                  typeFilter === f.v
+                    ? "bg-brand-600 text-white border-brand-600"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-brand-300"
+                }`}
+              >
+                {f.l}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            {visibleJobs.map((job) => (
+              <JobCard key={job._id} job={job} />
+            ))}
+            {visibleJobs.length === 0 && <p className="text-gray-400">No jobs found.</p>}
+          </div>
         </div>
       )}
     </div>

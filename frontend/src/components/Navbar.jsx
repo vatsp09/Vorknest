@@ -32,6 +32,17 @@ const Navbar = () => {
     navigate("/");
   };
 
+  // Freelancer -> Client goes through the Client Profile form.
+  // Client -> Freelancer switches straight away.
+  const handleSwitchRole = () => {
+    setMenuOpen(false);
+    if (isClient) {
+      switchMode();
+    } else {
+      navigate("/become-client");
+    }
+  };
+
   return (
     <header className="flex items-center justify-between px-10 py-5 bg-white border-b border-gray-100">
       <div className="flex items-center gap-10">
@@ -61,7 +72,7 @@ const Navbar = () => {
 
           {user && (
             <button
-              onClick={switchMode}
+              onClick={handleSwitchRole}
               className="flex items-center gap-1.5 text-sm font-medium text-brand-600 border border-brand-200 bg-brand-50 px-3 py-1.5 rounded-full hover:bg-brand-100"
             >
               <Repeat size={14} />
@@ -109,10 +120,7 @@ const Navbar = () => {
                 </Link>
 
                 <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    switchMode();
-                  }}
+                  onClick={handleSwitchRole}
                   className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   <Repeat size={16} />

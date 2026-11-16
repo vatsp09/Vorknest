@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ name: "", email: "", password: "", mode: "freelancer" });
   const [error, setError] = useState("");
 
@@ -12,7 +13,7 @@ const Register = () => {
     e.preventDefault();
     try {
       await register(form);
-      navigate("/");
+     navigate(location.state?.from || "/", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
