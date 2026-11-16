@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import JobDetail from "./pages/JobDetail";
 import BecomeClient from "./pages/BecomeClient";
+import Messages from "./pages/Messages";
+import ChatWindow from "./pages/ChatWindow";
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/become-client" element={<BecomeClient />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/messages/:conversationId" element={<ChatWindow />} />
       </Routes>
     </div>
   );
